@@ -1,4 +1,4 @@
-# Setup TeamCity 2020 on Ubuntu
+# Setup TeamCity 2021 on Ubuntu
 
 The script includes installation and configuration:
 * Java
