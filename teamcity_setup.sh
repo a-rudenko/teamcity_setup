@@ -62,11 +62,11 @@ fi
 #===================================TeamCity
 read -p "Do you want to download and install TeamCity? [y/n]" answer
 if [ $answer == "y" ]; then
-  wget https://download-cdn.jetbrains.com/teamcity/TeamCity-2022.10.3.tar.gz
-  tar -xzf TeamCity-2022.10.3.tar.gz
+  wget https://download-cdn.jetbrains.com/teamcity/TeamCity-2022.10.4.tar.gz
+  tar -xzf TeamCity-2022.10.4.tar.gz
   mkdir /opt/JetBrains
   mv TeamCity /opt/JetBrains/TeamCity
-  rm TeamCity-2022.10.3.tar.gz
+  rm TeamCity-2022.10.4.tar.gz
   cd /opt/JetBrains/TeamCity
   chown -R ubuntu /opt/JetBrains/TeamCity
   cat <<"EOT" >>/etc/systemd/system/teamcity.service
