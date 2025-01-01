@@ -1,4 +1,4 @@
-# Setup TeamCity 2024 on Ubuntu
+# Setup TeamCity 2025 on Ubuntu
 
 The script includes installation and configuration:
 * Java
