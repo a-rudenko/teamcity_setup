@@ -16,10 +16,10 @@ if [ $answer == "y" ]; then
   echo "$(java -version)"
 fi
 
-read -p "Do you want to install openjdk-11-jdk? [y/n]" answer
+read -p "Do you want to install openjdk-17-jdk? [y/n]" answer
 if [ $answer == "y" ]; then
   apt update
-  apt install openjdk-11-jdk
+  apt install openjdk-17-jdk
   java -version
 fi
 
