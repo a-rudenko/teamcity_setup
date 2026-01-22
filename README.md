@@ -1,12 +1,10 @@
-# Setup TeamCity on Ubuntu
-
-#### Description
+<h1 align="center">Setup TeamCity on Ubuntu</h1>
 
 This bash script automates the installation and configuration of a complete TeamCity CI/CD stack on Ubuntu-compatible systems. The script installs all necessary components for running TeamCity.
 
 [System Requirements](https://www.jetbrains.com/help/teamcity/system-requirements.html)
 
-#### Features
+<h2>Features</h2> 
 
 * Java - OpenJDK 21 installation
 * PostgreSQL - Relational database installation (Ubuntu or official repository)
@@ -18,7 +16,7 @@ This bash script automates the installation and configuration of a complete Team
 * Interactive Setup - Step-by-step configuration with user prompts
 * Uninstall script - For testing purposes
 
-#### Quick Start
+<h2>Quick Start</h2> 
 
 Before installation, you can override the version of TeamCity and Postgres in the script's settings:
 
@@ -32,10 +30,19 @@ POSTGRESQL_VERSION="CUSTOM_VERSION"
 # ============================================================================
 ```
 
-1. Make it executable `chmod +x install_teamcity.sh`
-2. Run with sudo `sudo ./install_teamcity.sh`
+1&#46; Make it executable 
 
-#### Accessing TeamCity
+```
+chmod +x install_teamcity.sh
+```
+
+2&#46; Run with sudo
+
+```
+sudo ./install_teamcity.sh
+```
+
+<h2>Accessing TeamCity</h2>
 
 After installation, TeamCity is available at:
 
@@ -43,7 +50,7 @@ After installation, TeamCity is available at:
 * Via Nginx (if installed): http://your-domain.com or http://localhost
 * HTTPS (if Let's Encrypt configured): https://your-domain.com
 
-#### Initial Setup
+<h2>Initial Setup</h2>
 
 1. Open TeamCity in your browser
 2. Accept license agreement
@@ -57,7 +64,7 @@ After installation, TeamCity is available at:
 4. Configure administrator account
 5. Start using TeamCity
 
-#### Post-Installation Checklist
+<h2>Post-Installation Checklist</h2>
 
 * Verify TeamCity service is running: sudo systemctl status teamcity
 * Test web interface access
@@ -67,14 +74,14 @@ After installation, TeamCity is available at:
 * Configure firewall rules if needed
 * Monitor disk space for build artifacts
 
-#### Logs Location
+<h2>Logs Location</h2>
 
 * TeamCity logs: /var/teamcity/logs/
 * Systemd logs: sudo journalctl -u teamcity
 * Nginx logs: /var/log/nginx/teamcity.*.log
 * PostgreSQL logs: /var/log/postgresql/postgresql-*.log
 
-#### Uninstallation
+<h2>Uninstallation</h2>
 
 Use the included uninstallation script to remove all components:
 
@@ -95,3 +102,7 @@ Force removal (no confirmation):
 ```
 sudo ./uninstall_teamcity.sh --force
 ```
+
+<h2>License</h2>
+
+<a href="https://github.com/a-rudenko/teamcity_setup/blob/master/LICENSE">MIT</a>
