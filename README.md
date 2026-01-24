@@ -88,19 +88,19 @@ Use the included uninstallation script to remove all components:
 Dry run (show what would be removed):
 
 ```
-sudo ./uninstall_teamcity.sh --dry-run
+sudo ./uninstall.sh --dry-run
 ```
 
 Interactive removal (asks for confirmation):
 
 ```
-sudo ./uninstall_teamcity.sh
+sudo ./uninstall.sh
 ```
 
 Force removal (no confirmation):
 
 ```
-sudo ./uninstall_teamcity.sh --force
+sudo ./uninstall.sh --force
 ```
 
 <h2>License</h2>
