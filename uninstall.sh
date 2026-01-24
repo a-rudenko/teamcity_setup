@@ -5,8 +5,6 @@ set -e
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-TEAMCITY_VERSION="2024.11.2"
-POSTGRESQL_VERSION="18"
 readonly DEFAULT_DB_NAME="teamcity"
 readonly DEFAULT_DB_USER="teamcity"
 readonly TEAMCITY_INSTALL_DIR="/opt/JetBrains/TeamCity"
@@ -48,7 +46,7 @@ confirm_action() {
     return 0
   fi
 
-  read -p "$prompt [y/n] " answer
+  read -rp "$prompt [y/n] " answer
   answer="${answer:-$default}"
 
   [[ $answer =~ ^[Yy]$ ]]
@@ -137,8 +135,8 @@ remove_postgresql_db() {
 
     log_message "Removing PostgreSQL database and user..."
 
-    read -e -p "Database name [${DEFAULT_DB_NAME}]: " -i "${DEFAULT_DB_NAME}" db_name
-    read -e -p "Username [${DEFAULT_DB_USER}]: " -i "${DEFAULT_DB_USER}" user
+    read -re -p "Database name [${DEFAULT_DB_NAME}]: " -i "${DEFAULT_DB_NAME}" db_name
+    read -re -p "Username [${DEFAULT_DB_USER}]: " -i "${DEFAULT_DB_USER}" user
 
     sudo -u postgres psql <<EOT 2>/dev/null || true
       DROP DATABASE IF EXISTS "$db_name";
@@ -147,11 +145,12 @@ EOT
 
     local pg_conf_dir="/etc/postgresql"
     if [ -d "$pg_conf_dir" ]; then
-      local pg_version=$(ls "$pg_conf_dir" 2>/dev/null | head -1)
+      local pg_version
+      pg_version=$(find "$pg_conf_dir" -maxdepth 1 -type f -name '*.conf' 2>/dev/null | head -1)
       local pg_conf="$pg_conf_dir/$pg_version/main/pg_hba.conf"
 
       if [ -f "$pg_conf" ]; then
-        sed -i "/^host[[:space:]]\+$db_name[[:space:]]\+$user/d" "$pg_conf" 2>/dev/null || true
+        sed -i "/^host[[:space:]]\+${db_name}[[:space:]]\+$user/d" "$pg_conf" 2>/dev/null || true
         log_message "Removed rules from pg_hba.conf"
 
         if systemctl is-active --quiet "postgresql@${pg_version}-main" 2>/dev/null; then
@@ -163,29 +162,34 @@ EOT
 }
 
 remove_postgresql_server() {
-  local pg_server_packages=$(dpkg -l | grep '^ii.*postgresql-[0-9]' | awk '{print $2}')
-  if [ -n "$pg_server_packages" ]; then
-    echo "Found PostgreSQL server packages: $pg_server_packages"
+  if ! command -v psql >/dev/null 2>&1 && [ ! -d /etc/postgresql ]; then
+    echo "PostgreSQL is not installed"
+    return 0
+  fi
 
-    if confirm_action "Remove PostgreSQL server packages?" "n"; then
-      systemctl stop postgresql 2>/dev/null || true
+  local version
+  version=$(psql --version 2>/dev/null | grep -oE '[0-9]+' | head -1)
+  if [ -n "$version" ]; then
+    echo "Found PostgreSQL version: $version"
+  fi
 
-      if apt remove --purge -y $pg_server_packages 2>/dev/null; then
-        log_message "✓ PostgreSQL server removed"
+  if confirm_action "Remove PostgreSQL server packages?" "n"; then
+    systemctl stop postgresql* 2>/dev/null || true
+    systemctl disable postgresql* 2>/dev/null || true
 
-        rm -f /etc/apt/sources.list.d/pgdg.list 2>/dev/null || true
-        rm -f /usr/share/keyrings/postgresql.gpg 2>/dev/null || true
-      else
-        local exit_code=$?
-        log_warn "Failed to remove PostgreSQL server (exit code: $exit_code)"
+    apt remove --purge -y postgresql\* 2>/dev/null || true
+    dpkg -l | grep postgres | awk '{print $2}' | xargs dpkg --purge --force-all 2>/dev/null || true
 
-        if [ $exit_code -eq 100 ]; then
-          log_warn "Package not found or already removed"
-        fi
-      fi
-    fi
+    echo "Cleaning up PostgreSQL files..."
+    rm -rf /var/lib/postgresql /etc/postgresql* 2>/dev/null || true
+    rm -f /etc/apt/sources.list.d/pgdg* /usr/share/keyrings/postgresql* 2>/dev/null || true
+
+    echo "Cleaning up dependencies..."
+    apt autoremove -y 2>/dev/null || true
+
+    log_message "✓ PostgreSQL removal completed"
   else
-    echo "No PostgreSQL server packages found"
+    echo "PostgreSQL removal cancelled"
   fi
 }
 
@@ -226,7 +230,7 @@ remove_letsencrypt() {
   if confirm_action "Remove Let's Encrypt TSL certificates?" "n"; then
     log_message "Removing Let's Encrypt certificates..."
 
-    read -e -p "Domain name: " domain_name
+    read -re -p "Domain name: " domain_name
     if [ -n "$domain_name" ]; then
       if certbot revoke --cert-name "$domain_name" --delete-after-revoke 2>/dev/null; then
         log_message "✓ Certificate revoked: $domain_name"
@@ -481,7 +485,7 @@ case "${1:-}" in
   echo "${RED}All components will be removed WITHOUT confirmation!${NONE}"
   echo "${RED}No prompts, no warnings, immediate deletion.${NONE}"
   echo
-  read -p "Type 'YES' to continue: " confirm
+  read -rp "Type 'YES' to continue: " confirm
   if [ "$confirm" != "YES" ]; then
     echo "Aborted"
     exit 1

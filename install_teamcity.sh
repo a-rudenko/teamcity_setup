@@ -39,7 +39,7 @@ command_not_found_handle() {
 # JAVA
 # ============================================================================
 
-read -p "Check Java version? [y/n] " answer
+read -rp "Check Java version? [y/n] " answer
 answer=${answer:-n}
 if [[ $answer =~ ^[Yy]$ ]]; then
   if command -v java &>/dev/null; then
@@ -49,7 +49,7 @@ if [[ $answer =~ ^[Yy]$ ]]; then
   fi
 fi
 
-read -p "Do you want to install openjdk-21-jdk? [y/n] " answer
+read -rp "Do you want to install openjdk-21-jdk? [y/n] " answer
 answer=${answer:-n}
 if [[ $answer =~ ^[Yy]$ ]]; then
   log_message "Updating packages..."
@@ -66,7 +66,7 @@ fi
 # POSTGRESQL
 # ============================================================================
 
-read -p "Check PostgreSQL installation? [y/n] " answer
+read -rp "Check PostgreSQL installation? [y/n] " answer
 if [[ ${answer:-n} =~ ^[Yy]$ ]]; then
   echo -n "PostgreSQL: "
   if command -v psql >/dev/null 2>&1; then
@@ -80,13 +80,13 @@ if [[ ${answer:-n} =~ ^[Yy]$ ]]; then
   fi
 fi
 
-read -p "Do you want to install PostgreSQL? [y/n] " answer
+read -rp "Do you want to install PostgreSQL? [y/n] " answer
 answer=${answer:-n}
 if [[ $answer =~ ^[Yy]$ ]]; then
   echo "Available options:"
   echo "1) Install from Ubuntu repository"
   echo "2) Install PostgreSQL ${POSTGRESQL_VERSION} from official PostgreSQL repository"
-  read -p "Choose option [1/2]: " install_option
+  read -rp "Choose option [1/2]: " install_option
 
   if [[ "$install_option" == "2" ]]; then
     log_message "Installing PostgreSQL ${POSTGRESQL_VERSION}..."
@@ -109,23 +109,23 @@ if [[ $answer =~ ^[Yy]$ ]]; then
 
     pg_version=$(psql --version 2>/dev/null | awk '{print $3}' | cut -d. -f1)
     if [ -z "$pg_version" ]; then
-      pg_version=$(ls /etc/postgresql/ 2>/dev/null | head -1)
+      pg_version=$(find /etc/postgresql/ -maxdepth 1 -type d -name '[0-9]*' -printf '%f\n' 2>/dev/null | head -1)
     fi
   fi
 
   log_message "Starting PostgreSQL ${pg_version}..."
-  systemctl start postgresql@${pg_version}-main
-  systemctl enable postgresql@${pg_version}-main
+  systemctl start "postgresql@${pg_version}-main"
+  systemctl enable "postgresql@${pg_version}-main"
 
   log_message "PostgreSQL Status:"
-  systemctl status postgresql@${pg_version}-main --no-pager
+  systemctl status "postgresql@${pg_version}-main" --no-pager
 fi
 
-read -p "Do you want to create a database and user for TeamCity in PostgreSQL? [y/n] " answer
+read -rp "Do you want to create a database and user for TeamCity in PostgreSQL? [y/n] " answer
 answer=${answer:-n}
 if [[ $answer =~ ^[Yy]$ ]]; then
-  read -e -p "Database name [${DEFAULT_DB_NAME}]: " -i "${DEFAULT_DB_NAME}" db_name
-  read -e -p "Username [${DEFAULT_DB_USER}]: " -i "${DEFAULT_DB_USER}" user
+  read -re -p "Database name [${DEFAULT_DB_NAME}]: " -i "${DEFAULT_DB_NAME}" db_name
+  read -re -p "Username [${DEFAULT_DB_USER}]: " -i "${DEFAULT_DB_USER}" user
 
   password=$(openssl rand -base64 16 | tr -d '=+/' | cut -c1-16)
   echo "╔═════════════════════════════════════════╗"
@@ -144,15 +144,17 @@ if [[ $answer =~ ^[Yy]$ ]]; then
     ALTER USER "$user" WITH CREATEDB;
 EOT
 
-  PG_CONF="/etc/postgresql/$(ls /etc/postgresql | head -1)/main/pg_hba.conf"
+  PG_CONF="/etc/postgresql/$(find /etc/postgresql -maxdepth 1 -type d -name '[0-9]*' -printf '%f\n' 2>/dev/null | head -1)/main/pg_hba.conf"
   if [ -f "$PG_CONF" ]; then
     echo "Configuring PostgreSQL access rules..."
-    echo "" >>"$PG_CONF"
-    echo "# TeamCity connection" >>"$PG_CONF"
-    echo "host    $db_name    $user    127.0.0.1/32    scram-sha-256" >>"$PG_CONF"
-    echo "host    $db_name    $user    ::1/128         scram-sha-256" >>"$PG_CONF"
+    cat >>"$PG_CONF" << EOF
 
-    POSTGRESQL_VERSION=$(ls /etc/postgresql/ | sort -V | head -1)
+# TeamCity connection
+host    $db_name    $user    127.0.0.1/32    scram-sha-256
+host    $db_name    $user    ::1/128         scram-sha-256
+EOF
+
+    POSTGRESQL_VERSION=$(find /etc/postgresql -maxdepth 1 -type d -name '[0-9]*' -printf '%f\n' 2>/dev/null | sort -V | head -1)
     /usr/bin/pg_ctlcluster "$POSTGRESQL_VERSION" main reload
   else
     echo "Warning: pg_hba.conf not found at $PG_CONF"
@@ -169,15 +171,15 @@ fi
 # TEAMCITY
 # ============================================================================
 
-read -p "Do you want to install TeamCity? [y/n] " answer
+read -rp "Do you want to install TeamCity? [y/n] " answer
 answer=${answer:-n}
 if [[ $answer =~ ^[Yy]$ ]]; then
-  local_archives=($(ls TeamCity-*.tar.gz 2>/dev/null))
+  local_archives=(TeamCity-*.tar.gz)
   if [ ${#local_archives[@]} -eq 0 ]; then
     log_error "The TeamCity local archive was not found in the current directory"
     log_info "Please download the TeamCity archive manually or use the online installation"
 
-    read -p "Do you want to download TeamCity from the official website? [y/n] " download_answer
+    read -rp "Do you want to download TeamCity from the official website? [y/n] " download_answer
     download_answer=${download_answer:-n}
 
     if [[ $download_answer =~ ^[Yy]$ ]]; then
@@ -190,7 +192,6 @@ if [[ $answer =~ ^[Yy]$ ]]; then
       fi
 
       ARCHIVE_PATH="/tmp/TeamCity-${TEAMCITY_VERSION}.tar.gz"
-      TEAMCITY_VERSION="${TEAMCITY_VERSION}"
     else
       log_info "Installation interrupted. Download the TeamCity archive and place it in the current directory"
       exit 0
@@ -255,7 +256,7 @@ if [[ $answer =~ ^[Yy]$ ]]; then
   fi
 
   mkdir -p /var/teamcity
-  chown -R $SUDO_USER:$SUDO_USER /opt/JetBrains/TeamCity /var/teamcity
+  chown -R "$SUDO_USER:$SUDO_USER" /opt/JetBrains/TeamCity /var/teamcity
   export TEAMCITY_DATA_PATH="/var/teamcity"
   log_message "Creating a systemd service..."
 
@@ -310,14 +311,14 @@ fi
 # NGINX
 # ============================================================================
 
-read -p "Do you want to install nginx (to proxy TeamCity to port 80)? [y/n] " answer
+read -rp "Do you want to install nginx (to proxy TeamCity to port 80)? [y/n] " answer
 answer=${answer:-n}
 if [[ $answer =~ ^[Yy]$ ]]; then
   log_message "Installing nginx..."
   apt update -q
   apt install -y nginx
 
-  read -e -p "Server name (domain or IP) [localhost]: " -i "localhost" server_name
+  read -re -p "Server name (domain or IP) [localhost]: " -i "localhost" server_name
   server_name=${server_name:-localhost}
 
   cat >/etc/nginx/sites-available/teamcity <<EOF
@@ -391,7 +392,7 @@ fi
 # LETSENCRYPT
 # ============================================================================
 
-read -p "Do you want to activate TSL with LetsEncrypt? [y/n] " answer
+read -rp "Do you want to activate TSL with LetsEncrypt? [y/n] " answer
 answer=${answer:-n}
 if [[ $answer =~ ^[Yy]$ ]]; then
   if ! systemctl is-active --quiet nginx; then
@@ -403,13 +404,13 @@ if [[ $answer =~ ^[Yy]$ ]]; then
   apt update -q
   apt install -y certbot python3-certbot-nginx
 
-  read -p "LetsEncrypt registration email (required): " email
+  read -rp "LetsEncrypt registration email (required): " email
   if [ -z "$email" ]; then
     error_message "Email is required for LetsEncrypt registration"
     exit 1
   fi
 
-  read -e -p "Domain name (must point to this server): " server_name
+  read -re -p "Domain name (must point to this server): " server_name
   if [ -z "$server_name" ] || [ "$server_name" == "localhost" ]; then
     error_message "TSL requires a real domain, not localhost"
     exit 1
@@ -443,7 +444,7 @@ if systemctl is-active --quiet teamcity; then
       echo "  - http://localhost"
     else
       echo "  - http://$server_name"
-      if [ -f /etc/letsencrypt/live/$server_name/fullchain.pem ]; then
+      if [ -f /etc/letsencrypt/live/"$server_name"/fullchain.pem ]; then
         echo "  - https://$server_name"
       fi
     fi
