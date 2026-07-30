@@ -5,7 +5,7 @@ set -e
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-TEAMCITY_VERSION="2026.1.2"
+TEAMCITY_VERSION="2026.1.3"
 POSTGRESQL_VERSION="18"
 readonly DEFAULT_DB_NAME="teamcity"
 readonly DEFAULT_DB_USER="teamcity"
